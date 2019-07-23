@@ -25,6 +25,7 @@ script="config.py" # cmssw config script filename
 filelist="filelist.py" # py file with dict of input file
 outputDir="" # output directory for result
 ind="" # ind is the job number
+clus="" # clus is the job cluster number
 arch="" # architecture
 cmssw_version="" # cmssw version
 reportFile="" # job report XMl file
@@ -34,7 +35,7 @@ doCallgrind=0  # do profiling - runs with callgrind
 doValgrind=0  # do memcheck - runs with valgrind
 lumiMaskSrc=""  # filename or URL for lumi mask
 lumiMaskType="filename"  # source type (filename or url)
-while getopts ":s:f:o:i:a:c:r:upml:" opt; do
+while getopts ":s:f:o:i:j:a:c:r:upml:" opt; do
     case $opt in
         \?)
             echo "Invalid option $OPTARG" >&2
@@ -59,6 +60,10 @@ while getopts ":s:f:o:i:a:c:r:upml:" opt; do
         i)
             echo "Index: $OPTARG"
             ind=$OPTARG
+            ;;
+        j)
+            echo "Cluster: $OPTARG"
+            clus=$OPTARG
             ;;
         a)
             echo "ARCH: $OPTARG"
@@ -151,17 +156,15 @@ if [ $overrideConfig == 1 ]; then
         fi
     fi
 fi
+
+echo "if hasattr(process, 'rivetAnalyzer'): process.rivetAnalyzer.OutputFile = 'MC_${ind}.yoda'" >> $wrapper
+
 echo "if hasattr(process, 'TFileService'): process.TFileService.fileName = "\
 "cms.string(process.TFileService.fileName.value().replace('.root', '_${ind}.root'))" >> $wrapper
 echo "for omod in process.outputModules.itervalues():" >> $wrapper
 echo "    omod.fileName = cms.untracked.string(omod.fileName.value().replace('.root', '_${ind}.root'))" >> $wrapper
 echo ""
 
-echo "==== Wrapper script ===="
-echo ""
-cat $wrapper
-echo ""
-echo "========================"
 
 ###############################################################################
 # Log the modified script
@@ -173,6 +176,53 @@ cat $script
 echo ""
 echo "==========================="
 
+
+echo "+++++ EXTRA RIVET CALL +++++"
+pwd
+echo "---> Rivet"
+ls -l
+ls Rivet/
+source rivetSetup.sh
+echo $RIVET_REF_PATH
+echo "+++++ ++++++++++++++++ +++++"
+
+# echo "+++++ EXTRA CALL FOR HERIWG STAND ALONE +++++"
+# tar -xf HerwigScratch.tar
+# ls -trlh
+# echo "++++ DONE"
+
+# echo "+++++ EXTRA CALL FOR RANDOM NUMBER IN HERWIG"
+# echo "if hasattr(process, 'generator'): process.generator.seed = "\
+# "cms.untracked.int32(int( (str(${clus})+str(${ind}) )[3:] ))" >> $wrapper
+# echo "if hasattr(process, 'generator'): print process.generator.seed" >> $wrapper
+
+echo "+++++ EXTRA CALL FOR RANDOM NUMBER IN PYTHIA"
+echo "if hasattr(process, 'RandomNumberGeneratorService'): process.RandomNumberGeneratorService.generator.initialSeed = "\
+"cms.untracked.uint32(int( (str(${clus})+str(${ind}) )[3:] ))" >> $wrapper
+echo "if hasattr(process, 'RandomNumberGeneratorService'): print process.RandomNumberGeneratorService.generator.initialSeed" >> $wrapper
+
+echo "if hasattr(process, 'RandomNumberGeneratorService'): process.RandomNumberGeneratorService.externalLHEProducer.initialSeed = "\
+"cms.untracked.uint32(int( (str(${clus})+str(${ind}) )[3:] ))" >> $wrapper
+echo "if hasattr(process, 'RandomNumberGeneratorService'): print process.RandomNumberGeneratorService.externalLHEProducer.initialSeed" >> $wrapper
+
+echo "+++++ EXTRA CALL TO JUST RUN A FEW EVENTS"
+# echo "process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(50000))" >> $wrapper
+echo "process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(1000000))" >> $wrapper
+echo "if hasattr(process, 'externalLHEProducer'): process.externalLHEProducer.nEvents = cms.untracked.uint32(1000000)"  >> $wrapper
+
+echo "+++++ EXTRA CALL TO REDUCE AMOUNT OF LINES IN LOGS"
+echo "process.MessageLogger.cerr.FwkReport.reportEvery = cms.untracked.int32(1000)" >> $wrapper
+
+echo "==== Wrapper script ===="
+echo ""
+cat $wrapper
+echo ""
+echo "========================"
+
+# if [[ $ind != 0 ]]; then
+#     sed -i 's/cmsgrid_final.lhe/cmsgrid_final_'${ind}'.lhe/g' LHE_custom.in
+#     grep cmsgrid_final LHE_custom.in
+# fi
 ###############################################################################
 # Now finally run script!
 # TODO: some automated retry system

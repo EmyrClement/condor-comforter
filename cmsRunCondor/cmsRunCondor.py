@@ -666,6 +666,10 @@ def get_output_files_from_config(cmssw_config_filename):
         output_files.append(process.TFileService.fileName.value())
     for omod in process.outputModules.itervalues():
         output_files.append(omod.fileName.value())
+
+    if hasattr(process, 'rivetAnalyzer'):
+        output_files.append(process.rivetAnalyzer.OutputFile.value())
+
     # reset everything as it was before
     sys.path.remove(os.path.dirname(cmssw_config_filename))
     sys.argv = keep_argv[:]
@@ -849,6 +853,7 @@ def cmsRunCondor(in_args=sys.argv[1:]):
             create_filelist(job_files, filelist_filename)
             create_lumilists(job_lumis, lumilist_filename)
 
+    total_num_jobs = 300
     log.info("Will be submitting %d jobs", total_num_jobs)
 
     ###########################################################################
@@ -895,8 +900,9 @@ def cmsRunCondor(in_args=sys.argv[1:]):
         out_dir=args.logDir, out_file='cmsRun.$(cluster).$(process).out',
         err_dir=args.logDir, err_file='cmsRun.$(cluster).$(process).err',
         log_dir=args.logDir, log_file='cmsRun.$(cluster).$(process).log',
-        cpus=1, memory='2GB', disk='3GB',
-        # cpus=1, memory='1GB', disk='500MB',
+        # cpus=1, memory='2GB', disk='3GB',
+        # cpus=1, memory='2GB', disk='3GB',
+        cpus=1, memory='1GB', disk='500MB',
         certificate=True,
         transfer_hdfs_input=True,
         share_exe_setup=True,
@@ -912,7 +918,7 @@ def cmsRunCondor(in_args=sys.argv[1:]):
         report_filename = "report{ind}.xml".format(**args_dict)
         args_dict['report'] = report_filename
         args_str = "-o {output} -i {ind} -a $ENV(SCRAM_ARCH) " \
-                   "-c $ENV(CMSSW_VERSION) -r {report}".format(**args_dict)
+                   "-c $ENV(CMSSW_VERSION) -r {report} -j $(cluster)".format(**args_dict)
         if args.lumiMask or args.runRange:
             if lumilist_filename:
                 args_str += ' -l ' + os.path.basename(lumilist_filename)
@@ -927,8 +933,8 @@ def cmsRunCondor(in_args=sys.argv[1:]):
 
         # warning: this must be aligned with whatever cmsRun_worker.sh does...
         job_output_files = [o.replace('.root', '_%d.root' % job_ind) for o in output_files]
+        job_output_files = [o.replace('.yoda', '_%d.yoda' % job_ind) for o in job_output_files]
         job_output_files.append(report_filename)
-
         if args.callgrind or args.valgrind:
             job_output_files.append('callgrind.out.*')
 
