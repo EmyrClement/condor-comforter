@@ -64,6 +64,11 @@ class ArgParser(argparse.ArgumentParser):
                                    "specified in the config file (i.e. \"as-is\"). "
                                    "This will ignore --dataset, totalUnits, unitsPerJob, etc",
                                    action='store_true')
+        input_sources.add_argument("--mc",
+                                   help="Is this MC generation? "
+                                   "This will ignore --dataset, totalUnits, unitsPerJob, etc",
+                                   action='store_true')
+
 
         debug_text = ('Note that in this mode, it will use the files and '
                       'number of events in the CMSSW config.'
@@ -152,6 +157,14 @@ class ArgParser(argparse.ArgumentParser):
                                  "don't submit to queue.",
                                  action='store_true')
 
+        mcGen_group = self.add_argument_group("MC Generation arguments",
+                                      "(Required for --mc, ignored otherwise)")
+        div.add_argument("--totalNumJobs",
+                          help="Total number of jobs to run.",
+                          type=int)
+        div.add_argument("--eventsPerJob",
+                          help="Number of events per job. ",
+                          type=int)
 
 def generate_script_filename(user_dict):
     return '/storage/{username}/cmsRunCondor/{datestamp}/cmsRunCondor_{timestamp}.condor'.format(**user_dict)
@@ -210,6 +223,9 @@ def check_args(args):
                                  ['splitByFiles', 'splitByLumis', 'lumiMask', 'runRange',
                                   'unitsPerJob', 'totalUnits', 'secondaryDataset'])
 
+    flag_mutually_exclusive_args(args, ['mc'], ['splitByFiles', 'splitByLumis', 'lumiMask', 'runRange',
+                                                'unitsPerJob', 'totalUnits', 'secondaryDataset'])
+
     args.condorScript = os.path.abspath(args.condorScript)
 
     if args.filelist:
@@ -225,6 +241,9 @@ def check_args(args):
     elif args.dataset:
       if not args.splitByFiles and not args.splitByLumis:
           raise RuntimeError("If using --dataset, need either --splitByFiles or --splitByLumis")
+    elif args.mc:
+      if not args.totalNumJobs or not args.eventsPerJob or not args.asIs:
+          raise RuntimeError("If using --mc, need --totalNumJobs, --eventsPerJob, and --asIs")
 
     # for now, restrict output dir to /hdfs
     if not args.outputDir.startswith('/hdfs'):
@@ -853,7 +872,8 @@ def cmsRunCondor(in_args=sys.argv[1:]):
             create_filelist(job_files, filelist_filename)
             create_lumilists(job_lumis, lumilist_filename)
 
-    total_num_jobs = 300
+    if args.mc:
+      total_num_jobs = args.totalNumJobs
     log.info("Will be submitting %d jobs", total_num_jobs)
 
     ###########################################################################
@@ -919,6 +939,8 @@ def cmsRunCondor(in_args=sys.argv[1:]):
         args_dict['report'] = report_filename
         args_str = "-o {output} -i {ind} -a $ENV(SCRAM_ARCH) " \
                    "-c $ENV(CMSSW_VERSION) -r {report} -j $(cluster)".format(**args_dict)
+        if args.mc:
+          args_str += ' -e ' + str(args.eventsPerJob)
         if args.lumiMask or args.runRange:
             if lumilist_filename:
                 args_str += ' -l ' + os.path.basename(lumilist_filename)

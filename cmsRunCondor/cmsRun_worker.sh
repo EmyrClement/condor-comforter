@@ -33,9 +33,10 @@ sandbox="" # sandbox location
 overrideConfig=1 # override the files and num events in the config
 doCallgrind=0  # do profiling - runs with callgrind
 doValgrind=0  # do memcheck - runs with valgrind
+mcNEvents=0 # number of events for MC generation
 lumiMaskSrc=""  # filename or URL for lumi mask
 lumiMaskType="filename"  # source type (filename or url)
-while getopts ":s:f:o:i:j:a:c:r:upml:" opt; do
+while getopts ":s:f:o:i:j:a:c:r:e:upml:" opt; do
     case $opt in
         \?)
             echo "Invalid option $OPTARG" >&2
@@ -90,6 +91,10 @@ while getopts ":s:f:o:i:j:a:c:r:upml:" opt; do
             echo "Running valgrind memcheck"
             doValgrind=1
             overrideConfig=0
+            ;;
+        e)
+            echo "Setting number of events for MC generation: $OPTARG"
+            mcNEvents=$OPTARG
             ;;
         l)
             lumiMaskSrc=$OPTARG
@@ -207,11 +212,11 @@ echo "if hasattr(process, 'RandomNumberGeneratorService'): print process.RandomN
 
 echo "+++++ EXTRA CALL TO JUST RUN A FEW EVENTS"
 # echo "process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(50000))" >> $wrapper
-echo "process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(1000000))" >> $wrapper
-echo "if hasattr(process, 'externalLHEProducer'): process.externalLHEProducer.nEvents = cms.untracked.uint32(1000000)"  >> $wrapper
+echo "process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(${mcNEvents}))" >> $wrapper
+echo "if hasattr(process, 'externalLHEProducer'): process.externalLHEProducer.nEvents = cms.untracked.uint32(${mcNEvents})"  >> $wrapper
 
 echo "+++++ EXTRA CALL TO REDUCE AMOUNT OF LINES IN LOGS"
-echo "process.MessageLogger.cerr.FwkReport.reportEvery = cms.untracked.int32(1000)" >> $wrapper
+echo "process.MessageLogger.cerr.FwkReport.reportEvery = cms.untracked.int32(100)" >> $wrapper
 
 echo "==== Wrapper script ===="
 echo ""
