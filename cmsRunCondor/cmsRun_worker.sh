@@ -240,7 +240,7 @@ elif [[ $doValgrind == 1 ]]; then
     valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all cmsRun -j $reportFile $wrapper
 else
     # cmsRun args MUST be in this order otherwise complains it doesn't know -j
-    /usr/bin/time -v cmsRun -j $reportFile $wrapper
+    /usr/bin/time -v cmsRun -n 1 -j $reportFile $wrapper
 fi
 cmsResult=$?
 echo "CMS JOB OUTPUT" $cmsResult
