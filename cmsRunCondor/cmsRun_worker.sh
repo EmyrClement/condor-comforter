@@ -128,7 +128,10 @@ echo "${cmssw_version} has been set up"
 cd ..
 tar xvzf ../sandbox.tgz
 
-cd src # run everything inside CMSSW_BASE/src
+# cd src # run everything inside CMSSW_BASE/src
+# For MC Generation, best to run outside CMSSW, as gridpack may setup it's own different CMSSW release
+cd ../
+cp ${cmssw_version}/src/${script} .
 
 echo "==== New env vars ===="
 printenv
@@ -170,6 +173,11 @@ echo "for omod in process.outputModules.itervalues():" >> $wrapper
 echo "    omod.fileName = cms.untracked.string(omod.fileName.value().replace('.root', '_${ind}.root'))" >> $wrapper
 echo ""
 
+echo "=== Wrapper script ==="
+echo ""
+cat $wrapper
+echo ""
+echo "==========================="
 
 ###############################################################################
 # Log the modified script
@@ -245,6 +253,11 @@ else
     # cmsRun args MUST be in this order otherwise complains it doesn't know -j
     /usr/bin/time -v cmsRun -n 1 -j $reportFile $wrapper
 fi
+
+# Copy output yoda files back into CMSSW release
+# This is where htcondenser (or condor-comforter?) expects output files to be
+cp *.yoda ${cmssw_version}/src/
+
 cmsResult=$?
 echo "CMS JOB OUTPUT" $cmsResult
 if [ "$cmsResult" -ne 0 ]; then
