@@ -182,14 +182,17 @@ echo ""
 echo "==========================="
 
 
-echo "+++++ EXTRA RIVET CALL +++++"
-pwd
-echo "---> Rivet"
-ls -l
-ls Rivet/
-source rivetSetup.sh
-echo $RIVET_REF_PATH
-echo "+++++ ++++++++++++++++ +++++"
+if [ -f "rivetSetup.sh" ]; then
+    echo "+++++ EXTRA RIVET CALL +++++"
+    pwd
+    echo "---> Rivet"
+    ls -l
+    ls Rivet/
+    source rivetSetup.sh
+    echo $RIVET_REF_PATH
+    echo "+++++ ++++++++++++++++ +++++"
+fi
+
 
 # echo "+++++ EXTRA CALL FOR HERIWG STAND ALONE +++++"
 # tar -xf HerwigScratch.tar
