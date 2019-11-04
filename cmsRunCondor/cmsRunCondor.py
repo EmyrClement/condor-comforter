@@ -64,10 +64,6 @@ class ArgParser(argparse.ArgumentParser):
                                    "specified in the config file (i.e. \"as-is\"). "
                                    "This will ignore --dataset, totalUnits, unitsPerJob, etc",
                                    action='store_true')
-        input_sources.add_argument("--mc",
-                                   help="Is this MC generation? "
-                                   "This will ignore --dataset, totalUnits, unitsPerJob, etc",
-                                   action='store_true')
 
 
         debug_text = ('Note that in this mode, it will use the files and '
@@ -93,6 +89,10 @@ class ArgParser(argparse.ArgumentParser):
         other_input_group.add_argument('--inputFile',
                                        help="Additional input file(s) needed by cmsRun.",
                                        action='append')
+        other_input_group.add_argument("--mc",
+                                   help="Is this MC generation? "
+                                   "This will ignore --dataset, totalUnits, unitsPerJob, etc",
+                                   action='store_true')
 
         div = self.add_argument_group("Job division",
                                       "(Required for --dataset|--filelist, ignored otherwise)")
