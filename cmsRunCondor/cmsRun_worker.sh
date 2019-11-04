@@ -33,7 +33,7 @@ sandbox="" # sandbox location
 overrideConfig=1 # override the files and num events in the config
 doCallgrind=0  # do profiling - runs with callgrind
 doValgrind=0  # do memcheck - runs with valgrind
-mcNEvents=0 # number of events for MC generation
+mcNEvents=-1 # number of events for MC generation
 lumiMaskSrc=""  # filename or URL for lumi mask
 lumiMaskType="filename"  # source type (filename or url)
 while getopts ":s:f:o:i:j:a:c:r:e:upml:" opt; do
@@ -132,6 +132,12 @@ tar xvzf ../sandbox.tgz
 # For MC Generation, best to run outside CMSSW, as gridpack may setup it's own different CMSSW release
 cd ../
 cp ${cmssw_version}/src/${script} .
+if [ -f "${cmssw_version}/src/rivetSetup.sh" ]; then
+    cp "${cmssw_version}/src/rivetSetup.sh" .
+fi
+if [ -f "${cmssw_version}/src/filelist.py" ]; then
+    cp "${cmssw_version}/src/filelist.py" .
+fi
 
 echo "==== New env vars ===="
 printenv
@@ -195,7 +201,7 @@ if [ -f "rivetSetup.sh" ]; then
     pwd
     echo "---> Rivet"
     ls -l
-    ls Rivet/
+    # ls Rivet/
     source rivetSetup.sh
     echo $RIVET_REF_PATH
     echo "+++++ ++++++++++++++++ +++++"
@@ -256,7 +262,12 @@ fi
 
 # Copy output yoda files back into CMSSW release
 # This is where htcondenser (or condor-comforter?) expects output files to be
-cp *.yoda ${cmssw_version}/src/
+for f in `ls *.yoda`; do
+    cp $f ${cmssw_version}/src/
+done
+for f in `ls *.root`; do
+    cp $f ${cmssw_version}/src/
+done
 
 cmsResult=$?
 echo "CMS JOB OUTPUT" $cmsResult
