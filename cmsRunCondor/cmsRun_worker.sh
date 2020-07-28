@@ -230,7 +230,7 @@ echo "if hasattr(process, 'RandomNumberGeneratorService'): print process.RandomN
 # echo "+++++ EXTRA CALL TO JUST RUN A FEW EVENTS"
 # echo "process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(100))" >> $wrapper
 echo "process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(${mcNEvents}))" >> $wrapper
-# echo "if hasattr(process, 'externalLHEProducer'): process.externalLHEProducer.nEvents = cms.untracked.uint32(${mcNEvents})"  >> $wrapper
+echo "if hasattr(process, 'externalLHEProducer'): process.externalLHEProducer.nEvents = cms.untracked.uint32(${mcNEvents})"  >> $wrapper
 
 echo "+++++ EXTRA CALL TO REDUCE AMOUNT OF LINES IN LOGS"
 echo "process.MessageLogger.cerr.FwkReport.reportEvery = cms.untracked.int32(100)" >> $wrapper
@@ -262,12 +262,27 @@ fi
 
 # Copy output yoda files back into CMSSW release
 # This is where htcondenser (or condor-comforter?) expects output files to be
-for f in `ls *.yoda`; do
-    cp $f ${cmssw_version}/src/
+for f in *yoda; do 
+    [ -e $f ]  && cp $f ${cmssw_version}/src/
 done
-for f in `ls *.root`; do
-    cp $f ${cmssw_version}/src/
+
+for f in *root; do 
+    [ -e $f ]  && cp $f ${cmssw_version}/src/
 done
+
+
+# if [ -f "*.yoda" ]; then
+#     for f in `ls *.yoda`; do
+#         cp $f ${cmssw_version}/src/
+#     done
+# fi
+
+# if [ -f "*.root" ]; then
+#     for f in `ls *.root`; do
+#         echo "Copying $f to ${cmssw_version}/src/"
+#         cp $f ${cmssw_version}/src/
+#     done
+# fi
 
 cmsResult=$?
 echo "CMS JOB OUTPUT" $cmsResult

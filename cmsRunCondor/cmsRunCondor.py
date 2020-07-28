@@ -968,7 +968,7 @@ def cmsRunCondor(in_args=sys.argv[1:]):
         job_output_files.append(report_filename)
         if args.callgrind or args.valgrind:
             job_output_files.append('callgrind.out.*')
-
+        print ("output files : ",job_output_files)
         job = ht.Job(
             name='cmsRun_%d' % job_ind,
             args=args_str,
